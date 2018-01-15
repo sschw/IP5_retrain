@@ -29,9 +29,8 @@ tf.app.flags.DEFINE_string('train_dir', '/tmp/ip5wke_retrain',
 tf.app.flags.DEFINE_string('output_dir', '/tmp/ip5wke_retrain_output',
                            """Directory where to export inference model.""")
 
-                           
-tf.app.flags.DEFINE_integer('max_steps', 100000,
-                            """Number of batches to run.""")
+tf.app.flags.DEFINE_string('eval_dir', '/tmp/model_reeval',
+                           """Directory where to write event logs.""")
                             
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")

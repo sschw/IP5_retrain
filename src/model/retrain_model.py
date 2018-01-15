@@ -17,6 +17,9 @@ tf.app.flags.DEFINE_integer('is_training', True,
 tf.app.flags.DEFINE_float('dropout_keep_probability', 0.5,
                             """How many nodes to keep during dropout""")
 
+tf.app.flags.DEFINE_integer('max_steps', 20000,
+                            """Number of batches to run.""")
+
 def produce_input_queues(directory):
     tfrecords_file_path = directory
     queue = tf.train.input_producer([tfrecords_file_path])

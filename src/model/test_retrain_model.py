@@ -16,33 +16,21 @@ import numpy as np
 import tensorflow as tf
 import os
 
-import ip5wke
+import model
 
 FLAGS = tf.app.flags.FLAGS
 
                            
-tf.app.flags.DEFINE_string('retrain_data_dir', os.path.join(os.path.dirname(__file__),
-                                                    os.pardir, os.pardir,
-                                                    'data', 'retrain', 
-                                                    'tfrecords'), 
-                            """Data Directory containing the category folders""")
-tf.app.flags.DEFINE_string('eval_dir', '/tmp/ip5wke_reeval',
-                           """Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('eval_data', 'validation',
+tf.app.flags.DEFINE_string('eval_data', 'test',
                            """Either 'test' or 'validation'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/tmp/ip5wke_retrain',
-                           """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60,
                             """How often to run the eval.""")
 tf.app.flags.DEFINE_integer('num_examples', 8000,
                             """Number of examples to run.""")
 tf.app.flags.DEFINE_boolean('run_once', False,
                             """Whether to run eval only once.""")
-
 tf.app.flags.DEFINE_float('dropout_keep_probability', 1.0,
                           "How many nodes to keep during dropout")
-tf.app.flags.DEFINE_integer('batch_size', 32,
-                            """Number of images to process in a batch.""")
 tf.app.flags.DEFINE_integer('is_training', False,
                             """Is training or not for batch norm""")
 
@@ -61,12 +49,12 @@ def eval_once(saver, summary_writer, top_k_op, top_k_op2, conf_matrix_op,
         device_count={'GPU': 0}
     )
     with tf.Session(config=config) as sess:
-        ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
+        ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
         if ckpt and ckpt.model_checkpoint_path:
             # Restores from checkpoint
             saver.restore(sess, ckpt.model_checkpoint_path)
             # Assuming model_checkpoint_path looks something like:
-            #   /my-favorite-path/ip5wke_train/model.ckpt-0,
+            #   /my-favorite-path/model_train/model.ckpt-0,
             # extract global_step from it.
             global_step = ckpt.model_checkpoint_path.split('/')[-1] \
                 .split('-')[-1]
@@ -151,14 +139,14 @@ def produce_input_queues(directory):
     return bottleneck_tensor_values, labels
 
 def evaluate():
-    """Eval ip5wke for a number of steps."""
+    """Eval model for a number of steps."""
     with tf.Graph().as_default() as g:
-        # Get images and labels for ip5wke.
-        images, labels = produce_input_queues(os.path.join(FLAGS.retrain_data_dir, "test", "tfrecords"))
+        # Get images and labels for model.
+        images, labels = produce_input_queues(os.path.join(FLAGS.retrain_bottleneck_data_dir, "test", "tfrecords"))
 
         # Build the softmax graph.
         with tf.variable_scope('retrain') as scope:
-          logits = ip5wke.softmax(images, 31)
+          logits = model.softmax(images, 31)
 
         # Calculate predictions.
         top_k_op = tf.nn.in_top_k(logits, labels, 1)
@@ -169,7 +157,7 @@ def evaluate():
 
         # Restore the moving average version of the learned variables for eval.
         variable_averages = tf.train.ExponentialMovingAverage(
-            ip5wke.MOVING_AVERAGE_DECAY)
+            model.MOVING_AVERAGE_DECAY)
         variables_to_restore = variable_averages.variables_to_restore()
         saver = tf.train.Saver(variables_to_restore,
                                write_version=tf.train.SaverDef.V2)
@@ -188,7 +176,6 @@ def evaluate():
 
 
 def main(argv=None):  # pylint: disable=unused-argument
-    # ip5wke.maybe_download_and_extract()
     if tf.gfile.Exists(FLAGS.eval_dir):
         tf.gfile.DeleteRecursively(FLAGS.eval_dir)
     tf.gfile.MakeDirs(FLAGS.eval_dir)
