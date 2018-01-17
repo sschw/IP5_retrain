@@ -1,8 +1,7 @@
-"""Evaluation for ip5wke.
+"""Evaluation for retrain of ip5wke model.
 
 Accuracy:
-ip5wke_train.py achieves 94% accuracy after 100K steps (256 epochs
-of data) as judged by ip5wke_eval.py.
+The accuracy in the test reached 100% after 20'000 steps. 
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -21,7 +20,7 @@ import model
 FLAGS = tf.app.flags.FLAGS
 
                            
-tf.app.flags.DEFINE_string('eval_data', 'test',
+tf.app.flags.DEFINE_string('eval_data', 'validation',
                            """Either 'test' or 'validation'.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60,
                             """How often to run the eval.""")
@@ -120,8 +119,9 @@ def eval_once(saver, summary_writer, top_k_op, top_k_op2, conf_matrix_op,
 
 
 def produce_input_queues(directory):
-    tfrecords_file_path = directory
-    queue = tf.train.input_producer([tfrecords_file_path])
+    tfrecords_file_paths = [os.path.join(directory, f) for f in os.listdir(directory)]
+    
+    queue = tf.train.input_producer(tfrecords_file_paths)
     reader = tf.TFRecordReader()
     _, serialized = reader.read(queue=queue)
     features = tf.parse_single_example(serialized=serialized,
@@ -142,18 +142,18 @@ def evaluate():
     """Eval model for a number of steps."""
     with tf.Graph().as_default() as g:
         # Get images and labels for model.
-        images, labels = produce_input_queues(os.path.join(FLAGS.retrain_bottleneck_data_dir, "test", "tfrecords"))
+        images, labels = produce_input_queues(os.path.join(FLAGS.retrain_bottleneck_data_dir, FLAGS.eval_data))
 
         # Build the softmax graph.
         with tf.variable_scope('retrain') as scope:
-          logits = model.softmax(images, 31)
+          logits = model.softmax(images, model.num_of_classes())
 
         # Calculate predictions.
         top_k_op = tf.nn.in_top_k(logits, labels, 1)
         top_k_op2 = tf.nn.in_top_k(logits, labels, 3)
         conf_matrix_op = tf.contrib.metrics.confusion_matrix(
             tf.argmax(logits, 1), labels,
-            num_classes=31)
+            num_classes=model.num_of_classes())
 
         # Restore the moving average version of the learned variables for eval.
         variable_averages = tf.train.ExponentialMovingAverage(
@@ -169,7 +169,7 @@ def evaluate():
 
         while True:
             eval_once(saver, summary_writer, top_k_op, top_k_op2,
-                      conf_matrix_op, 31, summary_op)
+                      conf_matrix_op, model.num_of_classes(), summary_op)
             if FLAGS.run_once:
                 break
             time.sleep(FLAGS.eval_interval_secs)

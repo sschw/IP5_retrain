@@ -21,8 +21,9 @@ tf.app.flags.DEFINE_integer('max_steps', 20000,
                             """Number of batches to run.""")
 
 def produce_input_queues(directory):
-    tfrecords_file_path = directory
-    queue = tf.train.input_producer([tfrecords_file_path])
+    tfrecords_file_paths = [os.path.join(directory, f) for f in os.listdir(directory)]
+    
+    queue = tf.train.input_producer(tfrecords_file_paths)
     reader = tf.TFRecordReader()
     _, serialized = reader.read(queue=queue)
     features = tf.parse_single_example(serialized=serialized,
@@ -52,11 +53,9 @@ def train():
                                   trainable=False)
 
         # Get bottleneck values and labels for ip5wke.
-        bottleneck_tensor_values, labels = produce_input_queues(os.path.join(FLAGS.retrain_bottleneck_data_dir, "train", "tfrecords"))
+        bottleneck_tensor_values, labels = produce_input_queues(os.path.join(FLAGS.retrain_bottleneck_data_dir, "train"))
 
         # Build a Graph for final softmax layer
-        # TODO Calc number of classes
-        
         with tf.variable_scope('retrain') as scope:
           logits = model.softmax(bottleneck_tensor_values, model.num_of_classes())
 

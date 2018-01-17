@@ -30,7 +30,12 @@ def create_file_list():
     filelist = {}
     for category in ['train', 'test', 'validation']:
         with open(os.path.join(FLAGS.retrain_processed_data_dir, category, 'files.txt')) as f:
-            filelist[category] = [l.strip().split(" ") for l in f]
+            filelist[category] = {}
+            for l in f:
+                lsplit = l.strip().split(" ")
+                if lsplit[1] not in filelist[category]:
+                    filelist[category][lsplit[1]] = []
+                filelist[category][lsplit[1]].append(lsplit[0])
     return filelist
     
 def read_png(path):
@@ -40,7 +45,7 @@ def read_png(path):
     image = tf.image.per_image_standardization(image)
     return image
 
-def convert_bottlenecks_to_tfrecords():
+def convert_bottlenecks_to_tfrecords(reset_cache = False):
     with tf.Session(graph=tf.Graph()) as sess:
         
         meta = tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], "../../models/1")
@@ -51,20 +56,23 @@ def convert_bottlenecks_to_tfrecords():
         filelist = create_file_list()
         
         for category in ['train', 'test', 'validation']:
-            if not os.path.exists("../../data/retrain/tfrecords/" + category + "/"):
-                os.makedirs("../../data/retrain/tfrecords/" + category + "/")
-            writer = tf.python_io.TFRecordWriter("../../data/retrain/tfrecords/" + category + "/tfrecords")
+            if not os.path.exists(os.path.join(FLAGS.retrain_bottleneck_data_dir, category)):
+                os.makedirs(os.path.join(FLAGS.retrain_bottleneck_data_dir, category))
             
-            for entry in filelist[category]:
-                sample = sess.run(read_png(os.path.join(os.pardir, os.pardir, entry[0])))
-                label_id = int(entry[1])
-                bottleneck_tensor_value = sess.run(bottleneck_tensor, {input_tensor: [sample]})
-                bottleneck_tensor_value = np.squeeze(bottleneck_tensor_value)
-                
-                example = assemble_example(bottleneck_tensor_value, label_id)
-                writer.write(example.SerializeToString())
-            writer.close()
+            for label in filelist[category]:
+                if reset_cache or not os.path.isfile(os.path.join(FLAGS.retrain_bottleneck_data_dir, category, label)):
+                    writer = tf.python_io.TFRecordWriter(os.path.join(FLAGS.retrain_bottleneck_data_dir, category, label))
+                    for entry in filelist[category][label]:
+                        sample = sess.run(read_png(os.path.join(os.pardir, os.pardir, entry)))
+                        label_id = int(label)
+                        bottleneck_tensor_value = sess.run(bottleneck_tensor, {input_tensor: [sample]})
+                        bottleneck_tensor_value = np.squeeze(bottleneck_tensor_value)
+                        
+                        example = assemble_example(bottleneck_tensor_value, label_id)
+                        writer.write(example.SerializeToString())
+                    writer.close()
 
+        
 
 if __name__ == "__main__":
     convert_bottlenecks_to_tfrecords()

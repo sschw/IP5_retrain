@@ -1,6 +1,5 @@
 # splits the images in the train folder into train (80%), test (10%), valid(10%)
-# resizes and crops the images on the object using otsu thresholding
-# saves the size of the objects
+# resizes and crops the images on the object using thresholding
 # and creates corresponding load-files for tensorflow
 import os
 from numpy import random
@@ -20,7 +19,6 @@ def create_import_list(top):
                 entries.append(fn + ' ' + folder_name)
     # shuffle list to improve training
     f = open(os.path.join(top, 'files.txt'), 'w')
-    random.shuffle(entries)
     f.write('\n'.join(entries))
     f.close()
 
@@ -58,7 +56,7 @@ def make_data(source, dest):
         f.close()
     
     print('Analyse object and scale on it')
-    scale_and_resize(source, os.path.join(dest, 'train/'), existing)
+    scale_and_resize(source, os.path.join(dest, 'train/'))
 
     # copy images to test and validation
     print('Randomly copying images to test and validation directories')

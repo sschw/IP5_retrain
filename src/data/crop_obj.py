@@ -30,7 +30,7 @@ def get_bounding_box_by_lab_thresholding(im):
             np.logical_or(pix_h < 0.18, pix_h > 0.5), 
             pix_s < 0.2
         ), square(3)
-      )        
+      )
     )
     
     # label the regions
@@ -80,15 +80,18 @@ def scale_on_object(im, padding):
     # crop the image by the object with a padding
     return im[min_y : max_y, min_x : max_x]
 
-def scale_and_resize_object(fn, root, dir, dest, existing):
+def scale_and_resize_object(fn, root, dir, dest):
     try:
         fn = os.path.join(root, fn)
         
-        pfile, ffile = os.path.split(fn)
-        _, pfile = os.path.split(pfile)
-        ffileNoExt, _ = os.path.splitext(ffile)
-        
-        if not os.path.join(pfile, ffileNoExt + ".PNG") in existing \
+        # prepare output name
+        new_fn = fn.replace(dir, dest).replace(" ", "_")
+        new_fn, _ = os.path.splitext(new_fn)
+        new_fn = new_fn + ".PNG"
+
+        if not os.path.isfile(new_fn) \
+                and not os.path.isfile(new_fn.replace(os.sep + 'train', os.sep + 'test')) \
+                and not os.path.isfile(new_fn.replace(os.sep + 'train', os.sep + 'validation')) \
                 and (fn.endswith(".jpg") or fn.endswith(".JPG") or fn.endswith(".PNG")):
             # Load image
             im = imread(fn)
@@ -102,10 +105,6 @@ def scale_and_resize_object(fn, root, dir, dest, existing):
             # Crop on object
             new_im = scale_on_object(new_im, 120)
             new_im = resize(new_im, (224, 224, 3), mode='constant')
-            # prepare output name
-            new_fn = fn.replace(dir, dest).replace(" ", "_")
-            new_fn, _ = os.path.splitext(new_fn)
-            new_fn = new_fn + ".PNG"
             # create directory in training dir if it doesn't already exist
             if not os.path.exists(os.path.dirname(new_fn)):
                 try:
@@ -118,8 +117,8 @@ def scale_and_resize_object(fn, root, dir, dest, existing):
     except:
         print("object not found in " + fn)
 
-def scale_and_resize(dir, dest, existing):
+def scale_and_resize(dir, dest):
     # scales and resizes in a folder with parallelization
     for root, dirs, files in os.walk(dir):
         Parallel(n_jobs=8)(
-            delayed(scale_and_resize_object)(fn=fn, root=root, dir=dir, dest=dest, existing=existing) for fn in files)
+            delayed(scale_and_resize_object)(fn=fn, root=root, dir=dir, dest=dest) for fn in files)
