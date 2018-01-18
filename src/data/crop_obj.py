@@ -11,7 +11,7 @@ import os
 from joblib import Parallel, delayed
 import time
 
-def get_bounding_box_by_lab_thresholding(im):
+def get_bounding_box_by_lab_thresholding(im, fixedMinArea=True):
     # Go through all pixels and make a bounding box around pixels that are not 
     # in the hsv range.
     scalefactor = 8
@@ -36,16 +36,18 @@ def get_bounding_box_by_lab_thresholding(im):
     # label the regions
     label_img = label(thr)
     
-    area = 0
     minx = pix.shape[1]
     miny = pix.shape[0]
     maxx = 0
     maxy = 0
-    # find the biggest region and take its bounding box
+    # find the bounding box around all regions that are bigger than 10px
     for region in regionprops(label_img):
-      if region.area > area:
-        area = region.area
-        miny, minx, maxy, maxx = region.bbox
+      if region.area > 10:
+        miy, mix, may, max = region.bbox
+        miny = miy if miy < miny else miny
+        minx = mix if mix < minx else minx
+        maxy = may if may > maxy else maxy
+        maxx = max if max > maxx else maxx
     
     # scale the bounding box to the real size
     return minx*scalefactor, miny*scalefactor, maxx*scalefactor, maxy*scalefactor
