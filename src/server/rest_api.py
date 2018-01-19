@@ -12,6 +12,11 @@ from random import *
 import os
 import subprocess
 
+import sys
+sys.path.append('../data/')
+
+import crop_obj
+
 tf.app.flags.DEFINE_string("host", "127.0.0.1", "gRPC server host")
 tf.app.flags.DEFINE_integer("port", 9000, "gRPC server port")
 tf.app.flags.DEFINE_string("model_name", "ip5wke", "TensorFlow model name")
@@ -65,7 +70,15 @@ class Inference:
 
         with open('current.jpg', 'wb') as f:
             f.write(file_data)
-            f.close()
+        
+        # crop the file if possible.
+        # if the object can't be found, leave it untouched
+        try:
+            crop_obj.scale_and_resize_from_imagedata(imread('current.jpg'), 'current.jpg')
+            with open('current.jpg', 'rb') as f:
+                file_data = f.read()
+        except:
+            pass
 
         self.request.inputs['images'].CopyFrom(
             tf.contrib.util.make_tensor_proto(file_data, shape=[1]))
@@ -82,8 +95,8 @@ class Inference:
 
         for i in range(0, 3):
             workpiece_id = str(classes[i])
-            filename = workpiece_id + (".PNG" if os.path.isfile(DIR_WORKPIECE_IDS + "/" + workpiece_id + ".PNG") else ".jpg")
-            f = open(DIR_WORKPIECE_IDS + '/' + filename, 'rb')
+            filename = os.listdir(DIR_WORKPIECE_IDS + workpiece_id)[0]
+            f = open(DIR_WORKPIECE_IDS + '/' + workpiece_id + '/' + filename, 'rb')
             images.append(base64.b64encode(f.read()))
             f.close()
 
@@ -92,10 +105,10 @@ class Inference:
     def new_workpiece_id(self):
         # REST endpoint for getting a new workpiece id
         print("new workpiece id requested")
-        id_files = os.listdir(DIR_WORKPIECE_IDS)
-        ids = map(lambda filename: int(os.path.splitext(filename)[0]), id_files) # files are named <id>.[PNG|JPG]
-        ids = sorted(ids)
-        new_id = ids[-1]+1 # could also use random id: randint(1000, 1000000)
+        dir_list = [d for d in os.listdir(DIR_NEW_WORKPIECES) 
+                      if os.path.isdir(os.path.join(DIR_NEW_WORKPIECES, d))]
+        dir_int_list = [int(d) for d in dir_list]
+        new_id = max(dir_int_list) + 1
         print("new workpiece id = " + str(new_id))
 
         return {"workpieceId": new_id}
@@ -107,20 +120,11 @@ class Inference:
         
         image_number = bottle.request.json['imageNumber']
         image = bottle.request.json['image']
-            directory = DIR_NEW_WORKPIECES + '/' + str(workpiece_id) + '/'
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-           with open(directory + str(image_number) + '.jpg', 'wb') as f:
-                f.write(base64.b64decode(image))
-                f.close()
-
-
-        id_file_name = DIR_WORKPIECE_IDS + '/' + str(workpiece_id) + '.jpg'
-        if not os.path.isfile(id_file_name): # if it is the first file uploaded with this id: also save it as id file.
-            print("adding " + id_file_name)
-            with open(id_file_name, 'wb') as id_file:
-                id_file.write(base64.b64decode(image))
-                    id_file.close()
+        directory = DIR_NEW_WORKPIECES + '/' + str(workpiece_id) + '/'
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        with open(directory + str(image_number) + '.jpg', 'wb') as f:
+            f.write(base64.b64decode(image))
 
         return {"workpieceId": workpiece_id}
     
