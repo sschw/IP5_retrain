@@ -132,6 +132,9 @@ def export():
       print( 'Successfully exported model to %s', FLAGS.output_dir)
 
 def main(unused_argv=None):
+  if tf.gfile.Exists(FLAGS.output_dir):
+      tf.gfile.DeleteRecursively(FLAGS.output_dir)
+  tf.gfile.MakeDirs(FLAGS.output_dir)
   export()
 
 
