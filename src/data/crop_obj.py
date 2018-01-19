@@ -11,10 +11,9 @@ import os
 from joblib import Parallel, delayed
 import time
 
-def get_bounding_box_by_lab_thresholding(im, fixedMinArea=True):
+def get_bounding_box_by_lab_thresholding(im, scalefactor=8, min_pix_area=10):
     # Go through all pixels and make a bounding box around pixels that are not 
     # in the hsv range.
-    scalefactor = 8
     
     # image to a smaller hsv values
     pix = rgb2hsv(rescale(im, 1/scalefactor, mode='constant'))
@@ -42,7 +41,7 @@ def get_bounding_box_by_lab_thresholding(im, fixedMinArea=True):
     maxy = 0
     # find the bounding box around all regions that are bigger than 10px
     for region in regionprops(label_img):
-      if region.area > 10:
+      if region.area > min_pix_area:
         miy, mix, may, max = region.bbox
         miny = miy if miy < miny else miny
         minx = mix if mix < minx else minx
@@ -52,7 +51,7 @@ def get_bounding_box_by_lab_thresholding(im, fixedMinArea=True):
     # scale the bounding box to the real size
     return minx*scalefactor, miny*scalefactor, maxx*scalefactor, maxy*scalefactor
 
-def scale_on_object(im, padding):
+def scale_on_object(im, padding=120):
     min_x, min_y, max_x, max_y = get_bounding_box_by_lab_thresholding(im)
     
     # find longer side for crop
@@ -105,7 +104,7 @@ def scale_and_resize_object(fn, root, dir, dest):
             new_im = im[center_y - center : center_y + center, center_x - center : center_x + center]
             
             # Crop on object
-            new_im = scale_on_object(new_im, 120)
+            new_im = scale_on_object(new_im)
             new_im = resize(new_im, (224, 224, 3), mode='constant')
             # create directory in training dir if it doesn't already exist
             if not os.path.exists(os.path.dirname(new_fn)):
