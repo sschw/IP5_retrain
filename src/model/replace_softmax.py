@@ -32,18 +32,14 @@ tf.app.flags.DEFINE_float('dropout_keep_probability', 1.0,
 NUM_TOP_CLASSES = 3
 
 def export():
+    """Exports the final layers by combining it with the old model."""
     with tf.Session() as sess:
       meta = tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], "../../models/1")
       bottleneck_graph_def = tf.graph_util.convert_variables_to_constants(sess, meta.graph_def, ["local5/local5"])
     tf.reset_default_graph()
         
-    #bottleneck_graph_def = tf.graph_util.extract_sub_graph(meta.graph_def, dest_nodes=["local5/local5"])
     serialized_tf_example, jpegs, logits = tf.import_graph_def(graph_def=bottleneck_graph_def, name="", return_elements=[model.INPUT_TENSOR_NAME, model.JPEGS_TENSOR_NAME, model.BOTTLENECK_TENSOR_NAME])
     
-    #serialized_tf_example = tf.get_default_graph().get_tensor_by_name(INPUT_TENSOR_NAME)
-    #jpegs = tf.get_default_graph().get_tensor_by_name(JPEGS_TENSOR_NAME)
-    
-    #logits = tf.get_default_graph().get_tensor_by_name(BOTTLENECK_TENSOR_NAME)
     with tf.variable_scope('retrain') as scope:
       logits = model.softmax(logits, model.num_of_classes())
     logits = tf.nn.softmax(logits)

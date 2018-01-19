@@ -21,6 +21,12 @@ tf.app.flags.DEFINE_integer('max_steps', 20000,
                             """Number of batches to run.""")
 
 def produce_input_queues(directory):
+    """Loads the bottleneck values from the tfrecords files
+    Args:
+      directory: The directory that the values are read from.
+    Returns:
+      bottleneck_tensor_values: Containing the bottleneck values.
+      labels: Containing the labels of the bottleneck values."""
     tfrecords_file_paths = [os.path.join(directory, f) for f in os.listdir(directory)]
     
     queue = tf.train.input_producer(tfrecords_file_paths)

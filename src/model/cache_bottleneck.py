@@ -20,6 +20,13 @@ import model
 FLAGS = tf.app.flags.FLAGS
 
 def assemble_example(value, label):
+    """Brings the value and the label into a format that is easy to read for the
+    train algorithm.
+    Args:
+      value: the value that should be saved
+      label: the label of this value
+    Returns:
+      A single Example for training."""
     return_example = tf.train.Example(features=tf.train.Features(feature={
         "bottleneck_tensor_value": tf.train.Feature(bytes_list=tf.train.BytesList(value=[value.tostring()])),
         "label": tf.train.Feature(int64_list=tf.train.Int64List(value=[label]))
@@ -27,6 +34,9 @@ def assemble_example(value, label):
     return return_example
 
 def create_file_list():
+    """Reads the processed folder and returns all files.
+    Returns:
+      Indexed array with the category and the label as indexes. e.g. filelist['test']['2']"""
     filelist = {}
     for category in ['train', 'test', 'validation']:
         with open(os.path.join(FLAGS.retrain_processed_data_dir, category, 'files.txt')) as f:
@@ -39,6 +49,9 @@ def create_file_list():
     return filelist
     
 def read_png(path):
+    """Add tensors to be able to pass the png files into the saved model.
+    Returns:
+      Tensor"""
     file_contents = tf.read_file(path)
     image = tf.image.decode_png(file_contents, channels=3)
     image = tf.cast(image, tf.float32)
@@ -46,6 +59,9 @@ def read_png(path):
     return image
 
 def convert_bottlenecks_to_tfrecords(reset_cache = False):
+    """Converts the processed files to bottleneck values and save them as tfrecords
+    Args:
+      reset_cache: True to overwrite the cached values."""
     with tf.Session(graph=tf.Graph()) as sess:
         
         meta = tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], "../../models/1")

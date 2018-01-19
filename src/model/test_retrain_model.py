@@ -119,6 +119,12 @@ def eval_once(saver, summary_writer, top_k_op, top_k_op2, conf_matrix_op,
 
 
 def produce_input_queues(directory):
+    """Loads the bottleneck values from the tfrecords files
+    Args:
+      directory: The directory that the values are read from.
+    Returns:
+      bottleneck_tensor_values: Containing the bottleneck values.
+      labels: Containing the labels of the bottleneck values."""
     tfrecords_file_paths = [os.path.join(directory, f) for f in os.listdir(directory)]
     
     queue = tf.train.input_producer(tfrecords_file_paths)

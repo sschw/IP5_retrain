@@ -12,6 +12,13 @@ from joblib import Parallel, delayed
 import time
 
 def get_bounding_box_by_lab_thresholding(im, scalefactor=8, min_pix_area=10):
+    """Calculates the bounding box
+    Args:
+      im: The image as numpy array
+      scalefactor: Describing, how much the image should be scaled down.
+      min_pix_area: The number of pixel that are required to be a relevant area
+    Returns:
+      minx, miny, maxx and maxy of the bounding box"""
     # Go through all pixels and make a bounding box around pixels that are not 
     # in the hsv range.
     
@@ -52,6 +59,12 @@ def get_bounding_box_by_lab_thresholding(im, scalefactor=8, min_pix_area=10):
     return minx*scalefactor, miny*scalefactor, maxx*scalefactor, maxy*scalefactor
 
 def scale_on_object(im, padding=120):
+    """Scales onto an object with a padding
+    Args:
+      im: The image as numpy array
+      padding: The padding around the bounding box of the object
+    Returns:
+      The downscaled image as numpy array."""
     min_x, min_y, max_x, max_y = get_bounding_box_by_lab_thresholding(im)
     
     # find longer side for crop
@@ -82,6 +95,11 @@ def scale_on_object(im, padding=120):
     return im[min_y : max_y, min_x : max_x]
     
 def scale_and_resize_from_imagedata(im, new_fn):
+    """Scales, resizes and saves an image.
+    After this operation the image will be 224x224.
+    Args:
+      im: The image as numpy array
+      new_fn: The new filename"""
     # Pre-crop - increases overall performance
     center_x, center_y = im.shape[1] >> 1, im.shape[0] >> 1
     center = center_x
@@ -103,6 +121,12 @@ def scale_and_resize_from_imagedata(im, new_fn):
     imsave(new_fn, new_im)
 
 def scale_and_resize_non_existing(fn, root, dir, dest):
+    """Checks if the file does already exist in the processed images folder.
+    Args:
+      fn: The filename
+      root: The path to the file
+      dir: The source directory of all images
+      dest: The destination of all images"""
     try:
         fn = os.path.join(root, fn)
         
