@@ -80,8 +80,29 @@ def scale_on_object(im, padding=120):
     
     # crop the image by the object with a padding
     return im[min_y : max_y, min_x : max_x]
+    
+def scale_and_resize_from_imagedata(im, new_fn):
+    # Pre-crop - increases overall performance
+    center_x, center_y = im.shape[1] >> 1, im.shape[0] >> 1
+    center = center_x
+    if center_x > center_y:
+        center = center_y
+    new_im = im[center_y - center : center_y + center, center_x - center : center_x + center]
+    
+    # Crop on object
+    new_im = scale_on_object(new_im)
+    new_im = resize(new_im, (224, 224, 3), mode='constant')
+    # create directory in training dir if it doesn't already exist
+    if not os.path.exists(os.path.dirname(new_fn)):
+        try:
+            os.makedirs(os.path.dirname(new_fn))
+        except OSError as e:
+            if e.errno != 17:
+                raise
+            pass
+    imsave(new_fn, new_im)
 
-def scale_and_resize_object(fn, root, dir, dest):
+def scale_and_resize_non_existing(fn, root, dir, dest):
     try:
         fn = os.path.join(root, fn)
         
@@ -96,25 +117,7 @@ def scale_and_resize_object(fn, root, dir, dest):
                 and (fn.endswith(".jpg") or fn.endswith(".JPG") or fn.endswith(".PNG")):
             # Load image
             im = imread(fn)
-            # Pre-crop - increases overall performance
-            center_x, center_y = im.shape[1] >> 1, im.shape[0] >> 1
-            center = center_x
-            if center_x > center_y:
-                center = center_y
-            new_im = im[center_y - center : center_y + center, center_x - center : center_x + center]
-            
-            # Crop on object
-            new_im = scale_on_object(new_im)
-            new_im = resize(new_im, (224, 224, 3), mode='constant')
-            # create directory in training dir if it doesn't already exist
-            if not os.path.exists(os.path.dirname(new_fn)):
-                try:
-                    os.makedirs(os.path.dirname(new_fn))
-                except OSError as e:
-                    if e.errno != 17:
-                        raise
-                    pass
-            imsave(new_fn, new_im)
+            scale_and_resize_from_imagedata(im, new_fn)
     except:
         print("object not found in " + fn)
 
@@ -122,4 +125,4 @@ def scale_and_resize(dir, dest):
     # scales and resizes in a folder with parallelization
     for root, dirs, files in os.walk(dir):
         Parallel(n_jobs=8)(
-            delayed(scale_and_resize_object)(fn=fn, root=root, dir=dir, dest=dest) for fn in files)
+            delayed(scale_and_resize_non_existing)(fn=fn, root=root, dir=dir, dest=dest) for fn in files)
