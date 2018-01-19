@@ -12,6 +12,8 @@ from random import *
 import os
 import subprocess
 
+from skimage.io import imread
+
 import sys
 sys.path.append('../data/')
 
@@ -25,7 +27,7 @@ tf.app.flags.DEFINE_float("request_timeout", 100.0, "Timeout of gRPC request")
 FLAGS = tf.app.flags.FLAGS
 
 DIR_NEW_WORKPIECES = '../../data/retrain/raw/'
-DIR_WORKPIECE_IDS  = '../../data/retrain/processed/'
+DIR_WORKPIECE_IDS  = '../../data/retrain/processed/train/'
 TRANSFER_LEARNING_SCRIPT = '../../start_retrain.sh'
 
 
@@ -66,15 +68,15 @@ class Inference:
     def recognize_workpiece(self):
         # REST endpoint for prediction, takes base64 encoded jpg and returns the top 3 predicted classes with class probabilities and images
 
-        file_data = base64.b64decode(bottle.request.json['image'])
+        file_data base64.b64decode(bottle.request.json['image'])
 
         with open('current.jpg', 'wb') as f:
             f.write(file_data)
-        
+
         # crop the file if possible.
         # if the object can't be found, leave it untouched
         try:
-            crop_obj.scale_and_resize_from_imagedata(imread('current.jpg'), 'current.jpg')
+            crop_obj.scale_and_resize_from_imagedata(imread('current.jpg'), './current.jpg')
             with open('current.jpg', 'rb') as f:
                 file_data = f.read()
         except:
@@ -105,7 +107,7 @@ class Inference:
     def new_workpiece_id(self):
         # REST endpoint for getting a new workpiece id
         print("new workpiece id requested")
-        dir_list = [d for d in os.listdir(DIR_NEW_WORKPIECES) 
+        dir_list = [d for d in os.listdir(DIR_NEW_WORKPIECES)
                       if os.path.isdir(os.path.join(DIR_NEW_WORKPIECES, d))]
         dir_int_list = [int(d) for d in dir_list]
         new_id = max(dir_int_list) + 1
@@ -116,18 +118,18 @@ class Inference:
     def add_workpiece_image(self):
         # REST endpoint for adding an image for a new workpiece
         print("adding image for new workpiece")
-        workpiece_id = bottle.request.json['workpieceId']
-        
-        image_number = bottle.request.json['imageNumber']
-        image = bottle.request.json['image']
-        directory = DIR_NEW_WORKPIECES + '/' + str(workpiece_id) + '/'
+        workpiece_id bottle.request.json['workpieceId']
+
+        image_number bottle.request.json['imageNumber']
+        image bottle.request.json['image']
+        directory = DIR_NEW_WORKPIECES + str(workpiece_id) + '/'
         if not os.path.exists(directory):
             os.makedirs(directory)
         with open(directory + str(image_number) + '.jpg', 'wb') as f:
             f.write(base64.b64decode(image))
 
         return {"workpieceId": workpiece_id}
-    
+
     def initiate_transfer_learning(self):
         # REST endpoint to start the transfer learning
         print("starting script " + TRANSFER_LEARNING_SCRIPT)
