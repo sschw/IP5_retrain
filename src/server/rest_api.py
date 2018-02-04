@@ -68,7 +68,7 @@ class Inference:
     def recognize_workpiece(self):
         # REST endpoint for prediction, takes base64 encoded jpg and returns the top 3 predicted classes with class probabilities and images
 
-        file_data base64.b64decode(bottle.request.json['image'])
+        file_data = base64.b64decode(bottle.request.json['image'])
 
         with open('current.jpg', 'wb') as f:
             f.write(file_data)
@@ -118,10 +118,10 @@ class Inference:
     def add_workpiece_image(self):
         # REST endpoint for adding an image for a new workpiece
         print("adding image for new workpiece")
-        workpiece_id bottle.request.json['workpieceId']
+        workpiece_id = bottle.request.json['workpieceId']
 
-        image_number bottle.request.json['imageNumber']
-        image bottle.request.json['image']
+        image_number = bottle.request.json['imageNumber']
+        image = bottle.request.json['image']
         directory = DIR_NEW_WORKPIECES + str(workpiece_id) + '/'
         if not os.path.exists(directory):
             os.makedirs(directory)
