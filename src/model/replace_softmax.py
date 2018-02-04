@@ -23,7 +23,7 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_integer('model_version', 1,
                             """Version number of the model.""")
                             
-tf.app.flags.DEFINE_integer('is_training', False,
+tf.app.flags.DEFINE_integer('is_training', 0,
                             """Is training or not for batch norm""")
                             
 tf.app.flags.DEFINE_float('dropout_keep_probability', 1.0,

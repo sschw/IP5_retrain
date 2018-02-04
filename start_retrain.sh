@@ -5,19 +5,19 @@
 cd "$(dirname "$0")"
 
 echo "Prepare the data"
-python ./src/data/make_dataset.py ./data/retrain/raw  ./data/retrain/processed
+python3 ./src/data/make_dataset.py ./data/retrain/raw  ./data/retrain/processed
 
 echo "Start transfer learning"
 cd ./src/model
 
 echo "Start creating bottleneck values"
-python ./cache_bottleneck.py
+python3 ./cache_bottleneck.py
 
 echo "Start retrain of last layers"
-python ./retrain_model.py
+python3 ./retrain_model.py
 
 echo "Serve the model by replacing the current models last layers"
-python ./replace_softmax.py
+python3 ./replace_softmax.py
 
 echo "Remove old model"
 # mv ./models/1 ./old_models/"$(date +"%Y%m%d_%H%M%S")"

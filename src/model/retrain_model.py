@@ -11,7 +11,7 @@ import time
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('is_training', True,
+tf.app.flags.DEFINE_integer('is_training', 1,
                             """Is training or not for batch norm""")
                             
 tf.app.flags.DEFINE_float('dropout_keep_probability', 0.5,
