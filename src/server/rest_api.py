@@ -97,9 +97,9 @@ class Inference:
 
         for i in range(0, 3):
             workpiece_id = str(classes[i])
-            filename = os.listdir(DIR_WORKPIECE_IDS + workpiece_id)[0]
-            f = open(DIR_WORKPIECE_IDS + '/' + workpiece_id + '/' + filename, 'rb')
-            images.append(base64.b64encode(f.read()))
+            filename = workpiece_id + (".PNG" if os.path.isfile(DIR_WORKPIECE_IDS + workpiece_id + ".PNG") else ".jpg")
+            f = open(DIR_WORKPIECE_IDS + filename, 'rb')
+            images.append(base64.b64encode(f.read()).decode("utf-8"))
             f.close()
 
         return {"scores": scores, "classes": classes, "images": images}
@@ -107,10 +107,10 @@ class Inference:
     def new_workpiece_id(self):
         # REST endpoint for getting a new workpiece id
         print("new workpiece id requested")
-        dir_list = [d for d in os.listdir(DIR_NEW_WORKPIECES)
-                      if os.path.isdir(os.path.join(DIR_NEW_WORKPIECES, d))]
-        dir_int_list = [int(d) for d in dir_list]
-        new_id = max(dir_int_list) + 1
+        id_files = os.listdir(DIR_WORKPIECE_IDS)
+        ids = map(lambda filename: int(os.path.splitext(filename)[0]), id_files) # files are named <id>.[PNG|JPG]
+        ids = sorted(ids)
+        new_id = ids[-1]+1 # could also use random id: randint(1000, 1000000)
         print("new workpiece id = " + str(new_id))
 
         return {"workpieceId": new_id}
